@@ -204,7 +204,7 @@ type FuncAnatomyTest struct {
 }
 
 // Runs standard function anatomy tests
-func runFunctionAnatomyTests(testFuncs []FuncAnatomyTest, t *testing.T) {
+func RunFunctionAnatomyTests(testFuncs []FuncAnatomyTest, t *testing.T) {
 
 	for i := 0; i < len(testFuncs); i++ {
 
@@ -306,12 +306,12 @@ func convertFuncOutputTestToAnatomyTest(ot FuncOutputTest) FuncAnatomyTest {
 
 
 // Runs standard function output tests using provided values
-func runFunctionOutputTests(testFuncs []FuncOutputTest, t *testing.T) {
+func RunFunctionOutputTests(testFuncs []FuncOutputTest, t *testing.T) {
 
 	for i := 0; i < len(testFuncs); i++ {
 
 		// Run the anatomy test on the function first
-		runFunctionAnatomyTests([]FuncAnatomyTest{ convertFuncOutputTestToAnatomyTest(testFuncs[i])}, t)
+		RunFunctionAnatomyTests([]FuncAnatomyTest{ convertFuncOutputTestToAnatomyTest(testFuncs[i])}, t)
 
 		// Don't even bother running the actual output tests if the anatomy tests failed
 		if !t.Failed() {
