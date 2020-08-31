@@ -205,7 +205,7 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, t *testing.T) {
 								if testFuncs[i].StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
 
 									t.Error("Function '" + testFuncs[i].Name +
-										"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j))
+										"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1))
 
 									// t.Error("Function '" + testFuncs[i].Name +
 									// 	"' displayed unexpected output line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
