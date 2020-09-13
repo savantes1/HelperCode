@@ -483,5 +483,27 @@ func RemoveAllComments(text string) string {
 	re = regexp.MustCompile(`//.*`)
 
 	return re.ReplaceAllString(filteredText, "")
+}
 
+// Tests specified code text to confirm using proper
+// random number seeding template
+func RunRandomNumberTemplateTest(text string, t *testing.T) {
+
+	filteredText := RemoveAllComments(text)
+
+	// regex: \s = [\t\n\f\r ]
+	// regex: \S = [^\t\n\f\r ]
+
+	matched, _ := regexp.MatchString(`(?s)func[ ]+init[ ]*\([ ]*\)[ ]*\{\s*rand.Seed\(int64\(time.Now\(\).Nanosecond\(\)\)\)\s*\}`, filteredText)
+
+	if !matched {
+		t.Error("Program doesn't seed random number generator as demonstrated in \"Random Numbers\" example code")
+	}
+
+	re := regexp.MustCompile(`rand.Seed`)
+	matches := re.FindAllStringSubmatch(filteredText, -1)
+
+	if len(matches) > 1 {
+		t.Error("Random number generator seeded more than once")
+	}
 }
