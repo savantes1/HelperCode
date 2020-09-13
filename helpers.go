@@ -507,3 +507,41 @@ func RunRandomNumberTemplateTest(text string, t *testing.T) {
 		t.Error("Random number generator seeded more than once")
 	}
 }
+
+// Tests specified code text to make sure the correct number of 
+// the specified objects are instantiated in the code
+func RunInstantiateObjectsTest(text string, objectName string, minObjectCount int, maxObjectCount int, t *testing.T) {
+
+	filteredText := RemoveAllComments(text)
+
+	// keep track of the number of objects instantiated
+	var objectCounter int = 0
+
+	// find all of the objects instantiated the traditional way
+	re := regexp.MustCompile(`var[ ]+[\w]+[ ]+` + objectName)
+	matches := re.FindAllStringSubmatch(filteredText, -1)
+
+	objectCounter += len(matches)
+
+	// find all of the objects instantiated using the short syntax
+	re = regexp.MustCompile(`(?s):=[ ]*`+objectName+`[ ]*\{.*?\}`)
+	matches = re.FindAllStringSubmatch(filteredText, -1)
+
+	objectCounter += len(matches)
+
+	// Figure out if there are too many or too few of the instantiated objects
+	if minObjectCount == maxObjectCount {
+		if objectCounter != minObjectCount {
+			t.Error("Program must instantiate " + strconv.Itoa(minObjectCount) + " \"" + objectName + "\" object variable(s)")
+		}
+	} else {
+
+		if objectCounter < minObjectCount {
+			t.Error("Program must instantiate at least " + strconv.Itoa(minObjectCount) + " \"" + objectName + "\" object variable(s)")
+		}
+
+		if objectCounter > maxObjectCount {
+			t.Error("Program cannot instantiate more than " + strconv.Itoa(maxObjectCount) + " \"" + objectName + "\" object variable(s)")
+		}
+	}
+}
