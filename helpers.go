@@ -121,10 +121,8 @@ func convertFuncOutputTestToAnatomyTest(ot FuncOutputTest) FuncAnatomyTest {
 	}
 }
 
-
-
-// Runs standard function output tests using provided values
-func RunFunctionOutputTests(testFuncs []FuncOutputTest, t *testing.T) {
+// TODO: combine this and RunFunctionOutputTests after refactoring code that directly called RunFunctionOutputTests
+func RunFunctionOutputTestsWithRandomSeed(testFuncs []FuncOutputTest, randomSeed int64, t *testing.T) {
 
 	for i := 0; i < len(testFuncs); i++ {
 
@@ -152,9 +150,9 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, t *testing.T) {
 				go func() {
 
 					// In case this function uses random numbers, make sure to set
-					// the seed to 1 so the "random" numbers will be predictable
-					// (deterministic) and will match the expected output
-					rand.Seed(1)
+					// the seed to specified seed value so the "random" numbers will 
+					// be predictable (deterministic) and will match the expected output
+					rand.Seed(randomSeed)
 
 					// Call the function...
 					// Note: This logic does not support variadic functions!
@@ -238,6 +236,15 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, t *testing.T) {
 		}
 
 	}
+
+}
+
+
+// Runs standard function output tests using provided values
+func RunFunctionOutputTests(testFuncs []FuncOutputTest, t *testing.T) {
+
+	RunFunctionOutputTestsWithRandomSeed(testFuncs, 1, t)
+	
 }
 
 
@@ -348,11 +355,8 @@ func convertMethodOutputTestToAnatomyTest(ot MethodOutputTest) MethodAnatomyTest
 	}
 }
 
-
-
-// Runs standard struct method output tests using provided values
-// IMPORTANT: testObject must be a pointer to the struct object being tested!
-func RunMethodOutputTests(testObject interface{}, methodTests []MethodOutputTest, t *testing.T) {
+// TODO: combine this and RunMethodOutputTests after refactoring code that directly called RunMethodOutputTests
+func RunMethodOutputTestsWithRandomSeed(testObject interface{}, methodTests []MethodOutputTest, randomSeed int64, t *testing.T) {
 
 	for i := 0; i < len(methodTests); i++ {
 
@@ -379,10 +383,10 @@ func RunMethodOutputTests(testObject interface{}, methodTests []MethodOutputTest
 				go func() {
 
 					// In case this method uses random numbers, make sure to set
-					// the seed to 1 so the "random" numbers will be predictable
-					// (deterministic) and will match the expected output in the
-					// methodReturns values
-					rand.Seed(1)
+					// the seed to specified seed value so the "random" numbers will 
+					// be predictable (deterministic) and will match the expected 
+					// output in the methodReturns values
+					rand.Seed(randomSeed)
 
 					// Call the method...
 					// Note: This logic does not support variadic functions!
@@ -467,6 +471,17 @@ func RunMethodOutputTests(testObject interface{}, methodTests []MethodOutputTest
 			}
 		}
 	}
+
+}
+
+
+
+// Runs standard struct method output tests using provided values
+// IMPORTANT: testObject must be a pointer to the struct object being tested!
+func RunMethodOutputTests(testObject interface{}, methodTests []MethodOutputTest, randomSeed int64, t *testing.T) {
+
+	RunMethodOutputTestsWithRandomSeed(testObject, methodTests, 1, t)
+	
 }
 
 
