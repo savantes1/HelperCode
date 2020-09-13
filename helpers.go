@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -466,4 +467,21 @@ func RunMethodOutputTests(testObject interface{}, methodTests []MethodOutputTest
 			}
 		}
 	}
+}
+
+
+// Removes all comments from the specified text
+// and returns filtered text
+func RemoveAllComments(text string) string {
+
+	// match all comment blocks
+	re := regexp.MustCompile(`(?s)/\*.*?\*/`)
+
+	filteredText := re.ReplaceAllString(string(text), "")
+
+	// match all single line comments
+	re = regexp.MustCompile(`//.*`)
+
+	return re.ReplaceAllString(filteredText, "")
+
 }
