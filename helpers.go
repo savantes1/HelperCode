@@ -523,9 +523,19 @@ func RunRandomNumberTemplateTest(text string, t *testing.T) {
 	}
 }
 
+
 // Tests specified code text to make sure the correct number of 
 // the specified objects are instantiated in the code
 func RunInstantiateObjectsTest(text string, objectName string, minObjectCount int, maxObjectCount int, t *testing.T) {
+	RunInstantiateObjectsTestWithFunctionName(text, objectName, minObjectCount, maxObjectCount, "", t)
+}
+
+
+
+
+// Tests specified code text to make sure the correct number of
+// the specified objects are instantiated in the code.
+func RunInstantiateObjectsTestWithFunctionName(text string, objectName string, minObjectCount int, maxObjectCount int, objInstantiatedFuncName string, t *testing.T) {
 
 	filteredText := RemoveAllComments(text)
 
@@ -547,16 +557,34 @@ func RunInstantiateObjectsTest(text string, objectName string, minObjectCount in
 	// Figure out if there are too many or too few of the instantiated objects
 	if minObjectCount == maxObjectCount {
 		if objectCounter != minObjectCount {
-			t.Error("Program must instantiate " + strconv.Itoa(minObjectCount) + " \"" + objectName + "\" object variable(s)")
+
+			errorMessage := "Program must instantiate " + strconv.Itoa(minObjectCount) + " \"" + objectName + "\" object variable(s)"
+			if objInstantiatedFuncName != "" {
+				errorMessage += " in function " + objInstantiatedFuncName
+			}
+
+			t.Error(errorMessage)
 		}
 	} else {
 
 		if objectCounter < minObjectCount {
-			t.Error("Program must instantiate at least " + strconv.Itoa(minObjectCount) + " \"" + objectName + "\" object variable(s)")
+
+			errorMessage := "Program must instantiate at least " + strconv.Itoa(minObjectCount) + " \"" + objectName + "\" object variable(s)"
+			if objInstantiatedFuncName != "" {
+				errorMessage += " in function " + objInstantiatedFuncName
+			}
+
+			t.Error(errorMessage)
 		}
 
 		if objectCounter > maxObjectCount {
-			t.Error("Program cannot instantiate more than " + strconv.Itoa(maxObjectCount) + " \"" + objectName + "\" object variable(s)")
+
+			errorMessage := "Program cannot instantiate more than " + strconv.Itoa(maxObjectCount) + " \"" + objectName + "\" object variable(s)"
+			if objInstantiatedFuncName != "" {
+				errorMessage += " in function " + objInstantiatedFuncName
+			}
+
+			t.Error(errorMessage)
 		}
 	}
 }
