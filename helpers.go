@@ -560,7 +560,7 @@ func RunInstantiateObjectsTestWithFunctionName(text string, objectName string, m
 
 			errorMessage := "Program must instantiate " + strconv.Itoa(minObjectCount) + " \"" + objectName + "\" object variable(s)"
 			if objInstantiatedFuncName != "" {
-				errorMessage += " in function " + objInstantiatedFuncName
+				errorMessage += " in function \"" + objInstantiatedFuncName + "\""
 			}
 
 			t.Error(errorMessage)
@@ -571,7 +571,7 @@ func RunInstantiateObjectsTestWithFunctionName(text string, objectName string, m
 
 			errorMessage := "Program must instantiate at least " + strconv.Itoa(minObjectCount) + " \"" + objectName + "\" object variable(s)"
 			if objInstantiatedFuncName != "" {
-				errorMessage += " in function " + objInstantiatedFuncName
+				errorMessage += " in function \"" + objInstantiatedFuncName + "\""
 			}
 
 			t.Error(errorMessage)
@@ -581,7 +581,7 @@ func RunInstantiateObjectsTestWithFunctionName(text string, objectName string, m
 
 			errorMessage := "Program cannot instantiate more than " + strconv.Itoa(maxObjectCount) + " \"" + objectName + "\" object variable(s)"
 			if objInstantiatedFuncName != "" {
-				errorMessage += " in function " + objInstantiatedFuncName
+				errorMessage += " in function \"" + objInstantiatedFuncName + "\""
 			}
 
 			t.Error(errorMessage)
