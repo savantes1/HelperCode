@@ -560,3 +560,55 @@ func RunInstantiateObjectsTest(text string, objectName string, minObjectCount in
 		}
 	}
 }
+
+// Returns the specified function body text.
+// First return value = true if function was found, otherwise false
+// Second return value = function body text
+func GetFunctionBodyText(text string, functionName string) (bool, string) {
+	
+	// remove any comments first
+	noCommentsText := RemoveAllComments(text)
+
+	re := regexp.MustCompile(`(?s)func[^\n]*`+functionName+`[^\n]*\([^\n]*\)[^\n]*\{`)
+	
+	functionSignatureIndexes := re.FindStringIndex(noCommentsText)
+
+	// FindStringIndex will be nil if no match found
+	// This means the function name wasn't found
+	if functionSignatureIndexes == nil {
+		return false, ""
+	}
+	
+	// Count the number curly braces
+	// We start at one for the opening curly brace for the function
+	curlyBraceCount := 1
+
+	// Remove all text before the function opening curly brace
+	filteredText := noCommentsText[functionSignatureIndexes[1]:]
+
+	var functionEndingIndex int
+
+	// Loop through each character in the text
+	// counting each opening and closing curly brace
+	for i, ch := range filteredText {
+
+		// rune 123 = '{'
+		if ch == 123 {
+			curlyBraceCount += 1
+		}
+
+		// rune 125 = '}'
+		if ch == 125 {
+			curlyBraceCount -= 1
+		}
+
+		// This only hits 0 when function closing
+		// curly brace is hit
+		if curlyBraceCount == 0 {
+			functionEndingIndex = i
+			break
+		}
+	}
+
+	return true, filteredText[:functionEndingIndex]
+}
