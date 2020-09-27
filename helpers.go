@@ -355,121 +355,135 @@ func convertMethodOutputTestToAnatomyTest(ot MethodOutputTest) MethodAnatomyTest
 	}
 }
 
+
+
+// Runs standard struct method output test.
+// Returns provided object after method has been invoked for further evaluation.  
+// IMPORTANT: testObject must be a pointer to the struct object being tested!
+func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, randomSeed int64, t *testing.T) reflect.Value {
+
+	// Run the anatomy test on the method first
+	RunMethodAnatomyTests(testObject, []MethodAnatomyTest{convertMethodOutputTestToAnatomyTest(methodTest)}, t)
+
+	// Don't even bother running the actual output tests if the anatomy tests failed
+	if !t.Failed() {
+
+		method := reflect.ValueOf(testObject).MethodByName(methodTest.Name)
+
+		if method.IsValid() {
+
+			//TODO: handle errors, maybe?
+			c, _ := outcap.NewContainer('\n')
+
+			// Create context for goroutine with timeout in case the method
+			// tries to process more stdin input than what is expected. Running
+			// in goroutine with context allows for easily timing out after 3 seconds.
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+			var returnVals []reflect.Value
+
+			go func() {
+
+				// In case this method uses random numbers, make sure to set
+				// the seed to specified seed value so the "random" numbers will 
+				// be predictable (deterministic) and will match the expected 
+				// output in the methodReturns values
+				rand.Seed(randomSeed)
+
+				// Call the method...
+				// Note: This logic does not support variadic functions!
+				returnVals = method.Call(methodTest.Args)
+				cancel()
+
+			}()
+
+			// Write each input string to method
+			for _, s := range methodTest.StdinStrings {
+				c.WriteToStdin(s)
+			}
+
+			select {
+			case <-ctx.Done():
+				c.Stop() // stop redirecting stdin/stdout
+			}
+
+			// If method timed out, it probably means that there was an unexpected fmt.Scanln()
+			if ctx.Err() == context.DeadlineExceeded {
+
+				t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+					"' timed out before completing. Do you have an extra fmt.Scanln, perhaps?")
+
+			} else {
+
+
+				if !methodTest.IgnoreReturns {
+
+					for j := 0; j < len(methodTest.Returns); j++ {
+
+						// For testing logic
+						//fmt.Println("Expected:", methodReturns[i][j].Interface(), "Actual:", returnVals[j].Interface())
+
+						if methodTest.Returns[j].Interface() != returnVals[j].Interface() {
+
+							t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+								"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
+						}
+
+					}
+				}
+
+
+
+
+				if !methodTest.IgnoreStdout {
+
+					if len(methodTest.StdoutStrings) == len(c.OutData) {
+
+						for j := 0; j < len(methodTest.StdoutStrings); j++ {
+	
+							if methodTest.StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
+
+								t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+									"' displayed unexpected line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
+	
+								// t.Error("Function '" + testFuncs[i].Name +
+								// 	"' displayed unexpected line to the terminal. Expected \"" +
+								// 	testFuncs[i].StdoutStrings[j] + "\", found \"" + c.OutData[j] + "\".")
+							}
+						}
+
+					} else {
+
+						// For testing
+						// for _, line := range c.OutData {
+						// 	fmt.Println(line)
+						// }
+
+
+						t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+							"' displayed unexpected number of output lines to the terminal. Expected " + 
+							strconv.Itoa(len(methodTest.StdoutStrings)) +
+							" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
+					}
+				}				
+			}
+
+		} else {
+			t.Error(reflect.TypeOf(testObject).Elem().Name() + " struct definition missing '" + methodTest.Name + "' method")
+		}
+	}
+	
+	return reflect.ValueOf(testObject)
+
+}
+
+
 // TODO: combine this and RunMethodOutputTests after refactoring code that directly called RunMethodOutputTests
 func RunMethodOutputTestsWithRandomSeed(testObject interface{}, methodTests []MethodOutputTest, randomSeed int64, t *testing.T) {
 
 	for i := 0; i < len(methodTests); i++ {
 
-		// Run the anatomy test on the method first
-		RunMethodAnatomyTests(testObject, []MethodAnatomyTest{convertMethodOutputTestToAnatomyTest(methodTests[i])}, t)
-
-		// Don't even bother running the actual output tests if the anatomy tests failed
-		if !t.Failed() {
-
-			method := reflect.ValueOf(testObject).MethodByName(methodTests[i].Name)
-
-			if method.IsValid() {
-
-				//TODO: handle errors, maybe?
-				c, _ := outcap.NewContainer('\n')
-
-				// Create context for goroutine with timeout in case the method
-				// tries to process more stdin input than what is expected. Running
-				// in goroutine with context allows for easily timing out after 3 seconds.
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-
-				var returnVals []reflect.Value
-
-				go func() {
-
-					// In case this method uses random numbers, make sure to set
-					// the seed to specified seed value so the "random" numbers will 
-					// be predictable (deterministic) and will match the expected 
-					// output in the methodReturns values
-					rand.Seed(randomSeed)
-
-					// Call the method...
-					// Note: This logic does not support variadic functions!
-					returnVals = method.Call(methodTests[i].Args)
-					cancel()
-
-				}()
-
-				// Write each input string to method
-				for _, s := range methodTests[i].StdinStrings {
-					c.WriteToStdin(s)
-				}
-
-				select {
-				case <-ctx.Done():
-					c.Stop() // stop redirecting stdin/stdout
-				}
-
-				// If method timed out, it probably means that there was an unexpected fmt.Scanln()
-				if ctx.Err() == context.DeadlineExceeded {
-
-					t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTests[i].Name +
-						"' timed out before completing. Do you have an extra fmt.Scanln, perhaps?")
-
-				} else {
-
-
-					if !methodTests[i].IgnoreReturns {
-
-						for j := 0; j < len(methodTests[i].Returns); j++ {
-
-							// For testing logic
-							//fmt.Println("Expected:", methodReturns[i][j].Interface(), "Actual:", returnVals[j].Interface())
-	
-							if methodTests[i].Returns[j].Interface() != returnVals[j].Interface() {
-	
-								t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTests[i].Name +
-									"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
-							}
-	
-						}
-					}
-
-
-
-
-					if !methodTests[i].IgnoreStdout {
-
-						if len(methodTests[i].StdoutStrings) == len(c.OutData) {
-
-							for j := 0; j < len(methodTests[i].StdoutStrings); j++ {
-		
-								if methodTests[i].StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
-
-									t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTests[i].Name +
-										"' displayed unexpected line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
-		
-									// t.Error("Function '" + testFuncs[i].Name +
-									// 	"' displayed unexpected line to the terminal. Expected \"" +
-									// 	testFuncs[i].StdoutStrings[j] + "\", found \"" + c.OutData[j] + "\".")
-								}
-							}
-
-						} else {
-
-							// For testing
-							// for _, line := range c.OutData {
-							// 	fmt.Println(line)
-							// }
-
-
-							t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTests[i].Name +
-								"' displayed unexpected number of output lines to the terminal. Expected " + 
-								strconv.Itoa(len(methodTests[i].StdoutStrings)) +
-								" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
-						}
-					}				
-				}
-
-			} else {
-				t.Error(reflect.TypeOf(testObject).Elem().Name() + " struct definition missing '" + methodTests[i].Name + "' method")
-			}
-		}
+		RunMethodOutputTest(testObject, methodTests[i], randomSeed, t)
 	}
 
 }
@@ -483,6 +497,8 @@ func RunMethodOutputTests(testObject interface{}, methodTests []MethodOutputTest
 	RunMethodOutputTestsWithRandomSeed(testObject, methodTests, 1, t)
 	
 }
+
+
 
 
 // Removes all comments from the specified text
