@@ -261,64 +261,88 @@ type MethodAnatomyTest struct {
 	ReturnTypes  []reflect.Type
 }
 
+
+
+// Runs standard struct method anatomy test using provided values.
+// Returns true if anatomy passes tests. Otherwise returns false.
+// IMPORTANT: testObject must be a pointer to the struct object being tested!
+func RunMethodAnatomyTest(testObject interface{}, methodTest MethodAnatomyTest, t *testing.T) bool {
+
+	passedTests := true
+
+	method := reflect.ValueOf(testObject).MethodByName(methodTest.Name)
+
+	if method.IsValid() {
+
+		if method.Type().NumIn() == len(methodTest.ArgTypes) {
+
+			for j := 0; j < len(methodTest.ArgTypes); j++ {
+
+				param := method.Type().In(j)
+
+				if param != methodTest.ArgTypes[j] {
+
+					t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+						"' has unexpected parameter type at position " + strconv.Itoa(j) + ". Expected type " +
+						methodTest.ArgTypes[j].String() + ", found type " + param.String())
+					
+					passedTests = false
+				}
+			}
+
+		} else {
+
+			t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+				"' has unexpected number of parameters. Expected " + strconv.Itoa(len(methodTest.ArgTypes)) +
+				" parameter(s), found " + strconv.Itoa(method.Type().NumIn()) + " parameter(s)")
+
+			passedTests = false
+		}
+
+		if method.Type().NumOut() == len(methodTest.ReturnTypes) {
+
+			for j := 0; j < len(methodTest.ReturnTypes); j++ {
+
+				param := method.Type().Out(j)
+
+				if param != methodTest.ReturnTypes[j] {
+
+					t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+						"' returned unexpected data type for return " + strconv.Itoa(j) + ". Expected type " +
+						methodTest.ReturnTypes[j].String() + ", received type " + param.String())
+					
+					passedTests = false
+				}
+
+			}
+
+		} else {
+			t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+				"' returns unexpected number of values. Expected " + strconv.Itoa(len(methodTest.ReturnTypes)) +
+				" value(s), received " + strconv.Itoa(method.Type().NumOut()) + " value(s)")
+
+			passedTests = false
+		}
+
+	} else {
+		t.Error(reflect.TypeOf(testObject).Elem().Name() + " struct definition missing '" + methodTest.Name + "' method")
+		passedTests = false
+	}
+
+	return passedTests
+
+}
+
+
 // Runs standard struct method anatomy tests using provided values
 // IMPORTANT: testObject must be a pointer to the struct object being tested!
 func RunMethodAnatomyTests(testObject interface{}, methodTests []MethodAnatomyTest, t *testing.T) {
 
 	for i := 0; i < len(methodTests); i++ {
-
-		method := reflect.ValueOf(testObject).MethodByName(methodTests[i].Name)
-
-		if method.IsValid() {
-
-			if method.Type().NumIn() == len(methodTests[i].ArgTypes) {
-
-				for j := 0; j < len(methodTests[i].ArgTypes); j++ {
-
-					param := method.Type().In(j)
-
-					if param != methodTests[i].ArgTypes[j] {
-
-						t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTests[i].Name +
-							"' has unexpected parameter type at position " + strconv.Itoa(j) + ". Expected type " +
-							methodTests[i].ArgTypes[j].String() + ", found type " + param.String())
-					}
-				}
-
-			} else {
-
-				t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTests[i].Name +
-					"' has unexpected number of parameters. Expected " + strconv.Itoa(len(methodTests[i].ArgTypes)) +
-					" parameter(s), found " + strconv.Itoa(method.Type().NumIn()) + " parameter(s)")
-			}
-
-			if method.Type().NumOut() == len(methodTests[i].ReturnTypes) {
-
-				for j := 0; j < len(methodTests[i].ReturnTypes); j++ {
-
-					param := method.Type().Out(j)
-
-					if param != methodTests[i].ReturnTypes[j] {
-
-						t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTests[i].Name +
-							"' returned unexpected data type for return " + strconv.Itoa(j) + ". Expected type " +
-							methodTests[i].ReturnTypes[j].String() + ", received type " + param.String())
-					}
-
-				}
-
-			} else {
-				t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTests[i].Name +
-					"' returns unexpected number of values. Expected " + strconv.Itoa(len(methodTests[i].ReturnTypes)) +
-					" value(s), received " + strconv.Itoa(method.Type().NumOut()) + " value(s)")
-			}
-
-		} else {
-			t.Error(reflect.TypeOf(testObject).Elem().Name() + " struct definition missing '" + methodTests[i].Name + "' method")
-		}
-
+		RunMethodAnatomyTest(testObject, methodTests[i], t)
 	}
 }
+
 
 // Method output testing struct
 type MethodOutputTest struct {
@@ -362,11 +386,9 @@ func convertMethodOutputTestToAnatomyTest(ot MethodOutputTest) MethodAnatomyTest
 // IMPORTANT: testObject must be a pointer to the struct object being tested!
 func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, randomSeed int64, t *testing.T) reflect.Value {
 
-	// Run the anatomy test on the method first
-	RunMethodAnatomyTests(testObject, []MethodAnatomyTest{convertMethodOutputTestToAnatomyTest(methodTest)}, t)
-
+	// Run the anatomy test on the method first.
 	// Don't even bother running the actual output tests if the anatomy tests failed
-	if !t.Failed() {
+	if !RunMethodAnatomyTest(testObject, convertMethodOutputTestToAnatomyTest(methodTest), t) {
 
 		method := reflect.ValueOf(testObject).MethodByName(methodTest.Name)
 
