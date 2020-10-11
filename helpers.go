@@ -388,7 +388,7 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 
 	// Run the anatomy test on the method first.
 	// Don't even bother running the actual output tests if the anatomy tests failed
-	if !RunMethodAnatomyTest(testObject, convertMethodOutputTestToAnatomyTest(methodTest), t) {
+	if RunMethodAnatomyTest(testObject, convertMethodOutputTestToAnatomyTest(methodTest), t) {
 
 		method := reflect.ValueOf(testObject).MethodByName(methodTest.Name)
 
