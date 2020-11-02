@@ -678,3 +678,48 @@ func GetFunctionBodyText(text string, functionName string) (bool, string) {
 
 	return true, filteredText[:functionEndingIndex]
 }
+
+
+// FlagType enum
+type FlagType int
+
+// FlagType enum values
+const (
+	IntFlag FlagType = iota
+	StringFlag FlagType = iota
+	FloatFlag FlagType = iota
+	BoolFlag FlagType = iota
+)
+
+// Tests specified code text to make sure specified command 
+// line flags are mapped to a variable of the appropriate type
+func RunValidateFlagArgTest(text string, flagType FlagType, flagName string, t *testing.T) {
+
+	filteredText := RemoveAllComments(text)
+
+	var functionName string 
+	switch flagType {
+	case IntFlag:
+		functionName = "IntVar"
+	case StringFlag:
+		functionName = "StringVar"
+	case FloatFlag:
+		functionName = "Float64Var"
+	case BoolFlag:
+		functionName = "BoolVar"
+	}
+
+	if len(functionName) > 0 {
+
+		re := regexp.MustCompile(`flag[\t ]*\.[\t ]*`+functionName+`[\t ]*\(.+?,[\t ]*"`+flagName+`"`)
+		if !re.MatchString(filteredText) {
+			t.Error("Must use \"flag\" package to map \""+flagName+"\" command line argument")
+		}
+
+	} else {
+		panic("Unexpected Flag Type")
+	}
+
+}
+
+
