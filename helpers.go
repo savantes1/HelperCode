@@ -121,8 +121,9 @@ func convertFuncOutputTestToAnatomyTest(ot FuncOutputTest) FuncAnatomyTest {
 	}
 }
 
-// TODO: combine this and RunFunctionOutputTests after refactoring code that directly called RunFunctionOutputTests
-func RunFunctionOutputTestsWithRandomSeed(testFuncs []FuncOutputTest, randomSeed int64, t *testing.T) {
+
+// Runs standard function output tests using provided values
+func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *testing.T) {
 
 	for i := 0; i < len(testFuncs); i++ {
 
@@ -238,15 +239,6 @@ func RunFunctionOutputTestsWithRandomSeed(testFuncs []FuncOutputTest, randomSeed
 	}
 
 }
-
-
-// Runs standard function output tests using provided values
-func RunFunctionOutputTests(testFuncs []FuncOutputTest, t *testing.T) {
-
-	RunFunctionOutputTestsWithRandomSeed(testFuncs, 1, t)
-	
-}
-
 
 
 
@@ -500,24 +492,15 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 }
 
 
-// TODO: combine this and RunMethodOutputTests after refactoring code that directly called RunMethodOutputTests
-func RunMethodOutputTestsWithRandomSeed(testObject interface{}, methodTests []MethodOutputTest, randomSeed int64, t *testing.T) {
+// Runs standard struct method output tests using provided values
+// IMPORTANT: testObject must be a pointer to the struct object being tested!
+func RunMethodOutputTests(testObject interface{}, methodTests []MethodOutputTest, randomSeed int64, t *testing.T) {
 
 	for i := 0; i < len(methodTests); i++ {
 
 		RunMethodOutputTest(testObject, methodTests[i], randomSeed, t)
 	}
 
-}
-
-
-
-// Runs standard struct method output tests using provided values
-// IMPORTANT: testObject must be a pointer to the struct object being tested!
-func RunMethodOutputTests(testObject interface{}, methodTests []MethodOutputTest, randomSeed int64, t *testing.T) {
-
-	RunMethodOutputTestsWithRandomSeed(testObject, methodTests, 1, t)
-	
 }
 
 
