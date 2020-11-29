@@ -188,7 +188,8 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *tes
 							// For testing logic
 							//fmt.Println("Expected:", testObjs[i].Returns[j].Interface(), "Actual:", returnVals[j].Interface())
 
-							if testFuncs[i].Returns[j].Interface() != returnVals[j].Interface() {
+							//if testFuncs[i].Returns[j].Interface() != returnVals[j].Interface() {
+							if !reflect.DeepEqual(testFuncs[i].Returns[j].Interface(), returnVals[j].Interface()) {
 
 								t.Error("Function '" + testFuncs[i].Name +
 									"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
@@ -437,7 +438,8 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 						// For testing logic
 						//fmt.Println("Expected:", methodReturns[i][j].Interface(), "Actual:", returnVals[j].Interface())
 
-						if methodTest.Returns[j].Interface() != returnVals[j].Interface() {
+						//if methodTest.Returns[j].Interface() != returnVals[j].Interface() {
+						if !reflect.DeepEqual(methodTest.Returns[j].Interface(), returnVals[j].Interface()) {
 
 							t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
 								"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
