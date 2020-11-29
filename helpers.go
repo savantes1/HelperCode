@@ -458,7 +458,11 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 							if methodTest.StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
 
 								t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-									"' displayed unexpected line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
+									"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1))
+
+								// t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+								// 	"' displayed unexpected line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
+
 	
 								// t.Error("Function '" + testFuncs[i].Name +
 								// 	"' displayed unexpected line to the terminal. Expected \"" +
