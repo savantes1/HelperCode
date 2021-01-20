@@ -32,6 +32,12 @@ func RunFunctionAnatomyTests(testFuncs []FuncAnatomyTest, t *testing.T) {
 
 			if function.Type().NumIn() == len(testFuncs[i].ArgTypes) {
 
+				// make a slice of all expected parameter types
+				var expectedParamTypes []string
+				for j := 0; j < len(testFuncs[i].ArgTypes); j++ {
+					expectedParamTypes = append(expectedParamTypes, "Position " + strconv.Itoa(j) + ": " + testFuncs[i].ArgTypes[j].String())
+				}
+
 				for j := 0; j < len(testFuncs[i].ArgTypes); j++ {
 
 					param := function.Type().In(j)
@@ -39,7 +45,7 @@ func RunFunctionAnatomyTests(testFuncs []FuncAnatomyTest, t *testing.T) {
 					if param != testFuncs[i].ArgTypes[j] {
 						t.Error("Function '" + testFuncs[i].Name + "' has unexpected parameter type at position " +
 							strconv.Itoa(j) + ". Expected type " + testFuncs[i].ArgTypes[j].String() +
-							", found type " + param.String())
+							", found type " + param.String() + ".\nExpected function parameter types:\n" + strings.Join(expectedParamTypes, "\n"))
 					}
 
 				}
@@ -58,8 +64,12 @@ func RunFunctionAnatomyTests(testFuncs []FuncAnatomyTest, t *testing.T) {
 
 					if returnParam != testFuncs[i].ReturnTypes[j] {
 
+						// t.Error("Function '" + testFuncs[i].Name +
+						// 	"' returned unexpected data type for return " + strconv.Itoa(j) + ". Expected type " +
+						// 	testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
+
 						t.Error("Function '" + testFuncs[i].Name +
-							"' returned unexpected data type for return " + strconv.Itoa(j) + ". Expected type " +
+							"' returned unexpected data type. Expected type " +
 							testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
 					}
 				}
@@ -177,7 +187,7 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *tes
 				if ctx.Err() == context.DeadlineExceeded {
 
 					t.Error("Function '" + testFuncs[i].Name +
-						"' timed out before completing. Do you have an extra fmt.Scanln, perhaps?")
+						"' timed out before completing. Most likely issue is that the program is calling fmt.Scanln too many times.")
 
 				} else {
 
@@ -191,8 +201,10 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *tes
 							//if testFuncs[i].Returns[j].Interface() != returnVals[j].Interface() {
 							if !reflect.DeepEqual(testFuncs[i].Returns[j].Interface(), returnVals[j].Interface()) {
 
-								t.Error("Function '" + testFuncs[i].Name +
-									"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
+								// t.Error("Function '" + testFuncs[i].Name +
+								// 	"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
+
+								t.Error("Function '" + testFuncs[i].Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
 							}
 						}
 					}
@@ -206,7 +218,7 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *tes
 								if testFuncs[i].StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
 
 									t.Error("Function '" + testFuncs[i].Name +
-										"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1))
+										"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
 
 									// t.Error("Function '" + testFuncs[i].Name +
 									// 	"' displayed unexpected output line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
@@ -269,6 +281,12 @@ func RunMethodAnatomyTest(testObject interface{}, methodTest MethodAnatomyTest, 
 
 		if method.Type().NumIn() == len(methodTest.ArgTypes) {
 
+			// make a slice of all expected parameter types
+			var expectedParamTypes []string
+			for j := 0; j < len(methodTest.ArgTypes); j++ {
+				expectedParamTypes = append(expectedParamTypes, "Position " + strconv.Itoa(j) + ": " + methodTest.ArgTypes[j].String())
+			}
+
 			for j := 0; j < len(methodTest.ArgTypes); j++ {
 
 				param := method.Type().In(j)
@@ -277,7 +295,7 @@ func RunMethodAnatomyTest(testObject interface{}, methodTest MethodAnatomyTest, 
 
 					t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
 						"' has unexpected parameter type at position " + strconv.Itoa(j) + ". Expected type " +
-						methodTest.ArgTypes[j].String() + ", found type " + param.String())
+						methodTest.ArgTypes[j].String() + ", found type " + param.String() + ".\nExpected method parameter types:\n" + strings.Join(expectedParamTypes, "\n"))
 					
 					passedTests = false
 				}
@@ -292,6 +310,7 @@ func RunMethodAnatomyTest(testObject interface{}, methodTest MethodAnatomyTest, 
 			passedTests = false
 		}
 
+
 		if method.Type().NumOut() == len(methodTest.ReturnTypes) {
 
 			for j := 0; j < len(methodTest.ReturnTypes); j++ {
@@ -301,7 +320,7 @@ func RunMethodAnatomyTest(testObject interface{}, methodTest MethodAnatomyTest, 
 				if param != methodTest.ReturnTypes[j] {
 
 					t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-						"' returned unexpected data type for return " + strconv.Itoa(j) + ". Expected type " +
+						"' returned unexpected data type. Expected type " +
 						methodTest.ReturnTypes[j].String() + ", received type " + param.String())
 					
 					passedTests = false
@@ -426,7 +445,7 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 			if ctx.Err() == context.DeadlineExceeded {
 
 				t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-					"' timed out before completing. Do you have an extra fmt.Scanln, perhaps?")
+					"' timed out before completing. Most likely issue is that the program is calling fmt.Scanln too many times.")
 
 			} else {
 
@@ -441,8 +460,8 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 						//if methodTest.Returns[j].Interface() != returnVals[j].Interface() {
 						if !reflect.DeepEqual(methodTest.Returns[j].Interface(), returnVals[j].Interface()) {
 
-							t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-								"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
+							t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
+							
 						}
 
 					}
@@ -460,15 +479,11 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 							if methodTest.StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
 
 								t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-									"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1))
+										"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
 
 								// t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
 								// 	"' displayed unexpected line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
 
-	
-								// t.Error("Function '" + testFuncs[i].Name +
-								// 	"' displayed unexpected line to the terminal. Expected \"" +
-								// 	testFuncs[i].StdoutStrings[j] + "\", found \"" + c.OutData[j] + "\".")
 							}
 						}
 
