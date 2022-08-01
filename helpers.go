@@ -24,67 +24,71 @@ type FuncAnatomyTest struct {
 // Runs standard function anatomy tests
 func RunFunctionAnatomyTests(testFuncs []FuncAnatomyTest, t *testing.T) {
 
-	for i := 0; i < len(testFuncs); i++ {
+	// If a test failure has already occurred, no need to run further tests
+	if !t.Failed() {
 
-		function := reflect.ValueOf(testFuncs[i].Obj)
+		for i := 0; i < len(testFuncs); i++ {
 
-		if function.IsValid() {
+			function := reflect.ValueOf(testFuncs[i].Obj)
 
-			if function.Type().NumIn() == len(testFuncs[i].ArgTypes) {
+			if function.IsValid() {
 
-				// make a slice of all expected parameter types
-				var expectedParamTypes []string
-				for j := 0; j < len(testFuncs[i].ArgTypes); j++ {
-					expectedParamTypes = append(expectedParamTypes, "Position " + strconv.Itoa(j) + ": " + testFuncs[i].ArgTypes[j].String())
-				}
+				if function.Type().NumIn() == len(testFuncs[i].ArgTypes) {
 
-				for j := 0; j < len(testFuncs[i].ArgTypes); j++ {
-
-					param := function.Type().In(j)
-
-					if param != testFuncs[i].ArgTypes[j] {
-						t.Error("Function '" + testFuncs[i].Name + "' has unexpected parameter type at position " +
-							strconv.Itoa(j) + ". Expected type " + testFuncs[i].ArgTypes[j].String() +
-							", found type " + param.String() + ".\nExpected function parameter types:\n" + strings.Join(expectedParamTypes, "\n"))
+					// make a slice of all expected parameter types
+					var expectedParamTypes []string
+					for j := 0; j < len(testFuncs[i].ArgTypes); j++ {
+						expectedParamTypes = append(expectedParamTypes, "Position " + strconv.Itoa(j) + ": " + testFuncs[i].ArgTypes[j].String())
 					}
 
+					for j := 0; j < len(testFuncs[i].ArgTypes); j++ {
+
+						param := function.Type().In(j)
+
+						if param != testFuncs[i].ArgTypes[j] {
+							t.Error("Function '" + testFuncs[i].Name + "' has unexpected parameter type at position " +
+								strconv.Itoa(j) + ". Expected type " + testFuncs[i].ArgTypes[j].String() +
+								", found type " + param.String() + ".\nExpected function parameter types:\n" + strings.Join(expectedParamTypes, "\n"))
+						}
+
+					}
+
+				} else {
+					t.Error("Function '" + testFuncs[i].Name +
+						"' has unexpected number of parameters. Expected " + strconv.Itoa(len(testFuncs[i].ArgTypes)) +
+						" parameter(s), found " + strconv.Itoa(function.Type().NumIn()) + " parameter(s)")
+				}
+
+				if function.Type().NumOut() == len(testFuncs[i].ReturnTypes) {
+
+					for j := 0; j < len(testFuncs[i].ReturnTypes); j++ {
+
+						returnParam := function.Type().Out(j)
+
+						if returnParam != testFuncs[i].ReturnTypes[j] {
+
+							// t.Error("Function '" + testFuncs[i].Name +
+							// 	"' returned unexpected data type for return " + strconv.Itoa(j) + ". Expected type " +
+							// 	testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
+
+							t.Error("Function '" + testFuncs[i].Name +
+								"' returned unexpected data type. Expected type " +
+								testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
+						}
+					}
+
+				} else {
+
+					t.Error("Function '" + testFuncs[i].Name +
+						"' returns unexpected number of values. Expected " + strconv.Itoa(len(testFuncs[i].ReturnTypes)) +
+						" value(s), found " + strconv.Itoa(function.Type().NumOut())  + " value(s)")
 				}
 
 			} else {
-				t.Error("Function '" + testFuncs[i].Name +
-					"' has unexpected number of parameters. Expected " + strconv.Itoa(len(testFuncs[i].ArgTypes)) +
-					" parameter(s), found " + strconv.Itoa(function.Type().NumIn()) + " parameter(s)")
+				t.Error("'" + testFuncs[i].Name + "' function definition missing.")
 			}
 
-			if function.Type().NumOut() == len(testFuncs[i].ReturnTypes) {
-
-				for j := 0; j < len(testFuncs[i].ReturnTypes); j++ {
-
-					returnParam := function.Type().Out(j)
-
-					if returnParam != testFuncs[i].ReturnTypes[j] {
-
-						// t.Error("Function '" + testFuncs[i].Name +
-						// 	"' returned unexpected data type for return " + strconv.Itoa(j) + ". Expected type " +
-						// 	testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
-
-						t.Error("Function '" + testFuncs[i].Name +
-							"' returned unexpected data type. Expected type " +
-							testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
-					}
-				}
-
-			} else {
-
-				t.Error("Function '" + testFuncs[i].Name +
-					"' returns unexpected number of values. Expected " + strconv.Itoa(len(testFuncs[i].ReturnTypes)) +
-					" value(s), found " + strconv.Itoa(function.Type().NumOut())  + " value(s)")
-			}
-
-		} else {
-			t.Error("'" + testFuncs[i].Name + "' function definition missing.")
 		}
-
 	}
 }
 
@@ -135,116 +139,121 @@ func convertFuncOutputTestToAnatomyTest(ot FuncOutputTest) FuncAnatomyTest {
 // Runs standard function output tests using provided values
 func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *testing.T) {
 
-	for i := 0; i < len(testFuncs); i++ {
+	// If a test failure has already occurred, no need to run further tests
+	if !t.Failed() {
 
-		// Run the anatomy test on the function first
-		RunFunctionAnatomyTests([]FuncAnatomyTest{ convertFuncOutputTestToAnatomyTest(testFuncs[i])}, t)
+		for i := 0; i < len(testFuncs); i++ {
 
-		// Don't even bother running the actual output tests if the anatomy tests failed
-		if !t.Failed() {
+			// Run the anatomy test on the function first
+			RunFunctionAnatomyTests([]FuncAnatomyTest{ convertFuncOutputTestToAnatomyTest(testFuncs[i])}, t)
+
+			// Don't even bother running the actual output tests if the anatomy tests failed
+			if !t.Failed() {
 
 
-			function := reflect.ValueOf(testFuncs[i].Obj)
+				function := reflect.ValueOf(testFuncs[i].Obj)
 
-			if function.IsValid() {
+				if function.IsValid() {
 
-				//TODO: handle errors, maybe?
-				c, _ := outcap.NewContainer('\n')
+					//TODO: handle errors, maybe?
+					c, _ := outcap.NewContainer('\n')
 
-				// Create context for goroutine with timeout in case the function
-				// tries to process more stdin input than what is expected. Running
-				// in goroutine with context allows for easily timing out after 3 seconds.
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+					// Create context for goroutine with timeout in case the function
+					// tries to process more stdin input than what is expected. Running
+					// in goroutine with context allows for easily timing out after 3 seconds.
+					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 
-				var returnVals []reflect.Value
+					var returnVals []reflect.Value
 
-				go func() {
+					go func() {
 
-					// In case this function uses random numbers, make sure to set
-					// the seed to specified seed value so the "random" numbers will 
-					// be predictable (deterministic) and will match the expected output
-					rand.Seed(randomSeed)
+						// In case this function uses random numbers, make sure to set
+						// the seed to specified seed value so the "random" numbers will 
+						// be predictable (deterministic) and will match the expected output
+						rand.Seed(randomSeed)
 
-					// Call the function...
-					// Note: This logic does not support variadic functions!
-					returnVals = function.Call(testFuncs[i].Args)
-					cancel()
+						// Call the function...
+						// Note: This logic does not support variadic functions!
+						returnVals = function.Call(testFuncs[i].Args)
+						cancel()
 
-				}()
+					}()
 
-				// Write each input string to function
-				for _, s := range testFuncs[i].StdinStrings {
-					c.WriteToStdin(s)
-				}
-
-				// Wait for goroutine to finish
-				select {
-				case <-ctx.Done():
-					c.Stop() // stop redirecting stdin/stdout
-				}
-
-				// If method timed out, it probably means that there was an unexpected fmt.Scanln()
-				if ctx.Err() == context.DeadlineExceeded {
-
-					t.Error("Function '" + testFuncs[i].Name +
-						"' timed out before completing. Most likely issue is that the program is calling fmt.Scanln too many times.")
-
-				} else {
-
-					if !testFuncs[i].IgnoreReturns {
-
-						for j := 0; j < len(testFuncs[i].Returns); j++ {
-
-							// For testing logic
-							//fmt.Println("Expected:", testObjs[i].Returns[j].Interface(), "Actual:", returnVals[j].Interface())
-
-							//if testFuncs[i].Returns[j].Interface() != returnVals[j].Interface() {
-							if !reflect.DeepEqual(testFuncs[i].Returns[j].Interface(), returnVals[j].Interface()) {
-
-								// t.Error("Function '" + testFuncs[i].Name +
-								// 	"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
-
-								t.Error("Function '" + testFuncs[i].Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
-							}
-						}
+					// Write each input string to function
+					for _, s := range testFuncs[i].StdinStrings {
+						c.WriteToStdin(s)
 					}
 
-					if !testFuncs[i].IgnoreStdout {
+					// Wait for goroutine to finish
+					select {
+					case <-ctx.Done():
+						c.Stop() // stop redirecting stdin/stdout
+					}
 
-						if len(testFuncs[i].StdoutStrings) == len(c.OutData) {
+					// If method timed out, it probably means that there was an unexpected fmt.Scanln()
+					if ctx.Err() == context.DeadlineExceeded {
 
-							for j := 0; j < len(testFuncs[i].StdoutStrings); j++ {
-		
-								if testFuncs[i].StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
+						t.Error("Function '" + testFuncs[i].Name +
+							"' timed out before completing. Most likely issue is that the program is calling fmt.Scanln too many times.")
 
-									t.Error("Function '" + testFuncs[i].Name +
-										"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
+					} else {
+
+						if !testFuncs[i].IgnoreReturns {
+
+							for j := 0; j < len(testFuncs[i].Returns); j++ {
+
+								// For testing logic
+								//fmt.Println("Expected:", testObjs[i].Returns[j].Interface(), "Actual:", returnVals[j].Interface())
+
+								//if testFuncs[i].Returns[j].Interface() != returnVals[j].Interface() {
+								if !reflect.DeepEqual(testFuncs[i].Returns[j].Interface(), returnVals[j].Interface()) {
 
 									// t.Error("Function '" + testFuncs[i].Name +
-									// 	"' displayed unexpected output line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
-		
+									// 	"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
+
+									t.Error("Function '" + testFuncs[i].Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
 								}
 							}
-
-						} else {
-
-							// For testing
-							// for _, line := range c.OutData {
-							// 	fmt.Println(line)
-							// }
-
-
-							t.Error("Function '" + testFuncs[i].Name +
-								"' displayed unexpected number of output lines to the terminal. Expected " + 
-								strconv.Itoa(len(testFuncs[i].StdoutStrings)) +
-								" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
 						}
+
+						if !testFuncs[i].IgnoreStdout {
+
+							if len(testFuncs[i].StdoutStrings) == len(c.OutData) {
+
+								for j := 0; j < len(testFuncs[i].StdoutStrings); j++ {
+			
+									if testFuncs[i].StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
+
+										t.Error("Function '" + testFuncs[i].Name +
+											"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
+
+										// t.Error("Function '" + testFuncs[i].Name +
+										// 	"' displayed unexpected output line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
+			
+									}
+								}
+
+							} else {
+
+								// For testing
+								// for _, line := range c.OutData {
+								// 	fmt.Println(line)
+								// }
+
+
+								t.Error("Function '" + testFuncs[i].Name +
+									"' displayed unexpected number of output lines to the terminal. Expected " + 
+									strconv.Itoa(len(testFuncs[i].StdoutStrings)) +
+									" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
+							}
+						}
+
 					}
 
+				} else {
+					t.Error("'" + testFuncs[i].Name + "' function definition missing.")
 				}
 
-			} else {
-				t.Error("'" + testFuncs[i].Name + "' function definition missing.")
 			}
 
 		}
@@ -398,113 +407,117 @@ func convertMethodOutputTestToAnatomyTest(ot MethodOutputTest) MethodAnatomyTest
 // IMPORTANT: testObject must be a pointer to the struct object being tested!
 func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, randomSeed int64, t *testing.T) reflect.Value {
 
-	// Run the anatomy test on the method first.
-	// Don't even bother running the actual output tests if the anatomy tests failed
-	if RunMethodAnatomyTest(testObject, convertMethodOutputTestToAnatomyTest(methodTest), t) {
+	// If a test failure has already occurred, no need to run further tests
+	if !t.Failed() {
 
-		method := reflect.ValueOf(testObject).MethodByName(methodTest.Name)
+		// Run the anatomy test on the method first.
+		// Don't even bother running the actual output tests if the anatomy tests failed
+		if RunMethodAnatomyTest(testObject, convertMethodOutputTestToAnatomyTest(methodTest), t) {
 
-		if method.IsValid() {
+			method := reflect.ValueOf(testObject).MethodByName(methodTest.Name)
 
-			//TODO: handle errors, maybe?
-			c, _ := outcap.NewContainer('\n')
+			if method.IsValid() {
 
-			// Create context for goroutine with timeout in case the method
-			// tries to process more stdin input than what is expected. Running
-			// in goroutine with context allows for easily timing out after 3 seconds.
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				//TODO: handle errors, maybe?
+				c, _ := outcap.NewContainer('\n')
 
-			var returnVals []reflect.Value
+				// Create context for goroutine with timeout in case the method
+				// tries to process more stdin input than what is expected. Running
+				// in goroutine with context allows for easily timing out after 3 seconds.
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 
-			go func() {
+				var returnVals []reflect.Value
 
-				// In case this method uses random numbers, make sure to set
-				// the seed to specified seed value so the "random" numbers will 
-				// be predictable (deterministic) and will match the expected 
-				// output in the methodReturns values
-				rand.Seed(randomSeed)
+				go func() {
 
-				// Call the method...
-				// Note: This logic does not support variadic functions!
-				returnVals = method.Call(methodTest.Args)
-				cancel()
+					// In case this method uses random numbers, make sure to set
+					// the seed to specified seed value so the "random" numbers will 
+					// be predictable (deterministic) and will match the expected 
+					// output in the methodReturns values
+					rand.Seed(randomSeed)
 
-			}()
+					// Call the method...
+					// Note: This logic does not support variadic functions!
+					returnVals = method.Call(methodTest.Args)
+					cancel()
 
-			// Write each input string to method
-			for _, s := range methodTest.StdinStrings {
-				c.WriteToStdin(s)
-			}
+				}()
 
-			select {
-			case <-ctx.Done():
-				c.Stop() // stop redirecting stdin/stdout
-			}
-
-			// If method timed out, it probably means that there was an unexpected fmt.Scanln()
-			if ctx.Err() == context.DeadlineExceeded {
-
-				t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-					"' timed out before completing. Most likely issue is that the program is calling fmt.Scanln too many times.")
-
-			} else {
-
-
-				if !methodTest.IgnoreReturns {
-
-					for j := 0; j < len(methodTest.Returns); j++ {
-
-						// For testing logic
-						//fmt.Println("Expected:", methodReturns[i][j].Interface(), "Actual:", returnVals[j].Interface())
-
-						//if methodTest.Returns[j].Interface() != returnVals[j].Interface() {
-						if !reflect.DeepEqual(methodTest.Returns[j].Interface(), returnVals[j].Interface()) {
-
-							t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
-							
-						}
-
-					}
+				// Write each input string to method
+				for _, s := range methodTest.StdinStrings {
+					c.WriteToStdin(s)
 				}
 
+				select {
+				case <-ctx.Done():
+					c.Stop() // stop redirecting stdin/stdout
+				}
+
+				// If method timed out, it probably means that there was an unexpected fmt.Scanln()
+				if ctx.Err() == context.DeadlineExceeded {
+
+					t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+						"' timed out before completing. Most likely issue is that the program is calling fmt.Scanln too many times.")
+
+				} else {
 
 
+					if !methodTest.IgnoreReturns {
 
-				if !methodTest.IgnoreStdout {
+						for j := 0; j < len(methodTest.Returns); j++ {
 
-					if len(methodTest.StdoutStrings) == len(c.OutData) {
+							// For testing logic
+							//fmt.Println("Expected:", methodReturns[i][j].Interface(), "Actual:", returnVals[j].Interface())
 
-						for j := 0; j < len(methodTest.StdoutStrings); j++ {
-	
-							if methodTest.StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
+							//if methodTest.Returns[j].Interface() != returnVals[j].Interface() {
+							if !reflect.DeepEqual(methodTest.Returns[j].Interface(), returnVals[j].Interface()) {
 
-								t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-										"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
-
-								// t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-								// 	"' displayed unexpected line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
-
+								t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
+								
 							}
+
 						}
-
-					} else {
-
-						// For testing
-						// for _, line := range c.OutData {
-						// 	fmt.Println(line)
-						// }
-
-
-						t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-							"' displayed unexpected number of output lines to the terminal. Expected " + 
-							strconv.Itoa(len(methodTest.StdoutStrings)) +
-							" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
 					}
-				}				
-			}
 
-		} else {
-			t.Error(reflect.TypeOf(testObject).Elem().Name() + " struct definition missing '" + methodTest.Name + "' method")
+
+
+
+					if !methodTest.IgnoreStdout {
+
+						if len(methodTest.StdoutStrings) == len(c.OutData) {
+
+							for j := 0; j < len(methodTest.StdoutStrings); j++ {
+		
+								if methodTest.StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
+
+									t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+											"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
+
+									// t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+									// 	"' displayed unexpected line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
+
+								}
+							}
+
+						} else {
+
+							// For testing
+							// for _, line := range c.OutData {
+							// 	fmt.Println(line)
+							// }
+
+
+							t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+								"' displayed unexpected number of output lines to the terminal. Expected " + 
+								strconv.Itoa(len(methodTest.StdoutStrings)) +
+								" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
+						}
+					}				
+				}
+
+			} else {
+				t.Error(reflect.TypeOf(testObject).Elem().Name() + " struct definition missing '" + methodTest.Name + "' method")
+			}
 		}
 	}
 	
