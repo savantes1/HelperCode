@@ -221,14 +221,14 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *tes
 							if len(testFuncs[i].StdoutStrings) == len(c.OutData) {
 
 								for j := 0; j < len(testFuncs[i].StdoutStrings); j++ {
-			
+	
 									if testFuncs[i].StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
 
 										t.Error("Function '" + testFuncs[i].Name +
 											"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
 
-										// t.Error("Function '" + testFuncs[i].Name +
-										// 	"' displayed unexpected output line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
+										// Added break so only one error is returned
+										break
 			
 									}
 								}
@@ -493,9 +493,8 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 									t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
 											"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
 
-									// t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-									// 	"' displayed unexpected line to the terminal. Unexpected line was \"" + c.OutData[j] + "\".")
-
+									
+									break
 								}
 							}
 
