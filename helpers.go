@@ -135,6 +135,16 @@ func convertFuncOutputTestToAnatomyTest(ot FuncOutputTest) FuncAnatomyTest {
 	}
 }
 
+// This function is meant to be used by all unit tests in order to gracefully recover from
+// runtime errors and provide a standard error message
+func StandardRunTimeErrorCheck(t *testing.T) {
+	err := recover()
+	if err != nil {
+		t.Error("A runtime error occurred while attempting to run this unit test.\nThere are a variety of situations that can cause runtime errors (e.g., accessing array index out of range, dereferencing a nil pointer, etc.).\nReview your code and/or contact the instructor for assistance.")
+	}
+}
+
+
 
 // Runs standard function output tests using provided values
 func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *testing.T) {
@@ -167,6 +177,18 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *tes
 
 					go func() {
 
+						//Note: defer statements execute in LIFO order
+						
+						// The cancel function needs to be called once the 
+						// goroutine has completely finished. This is how the
+						// context object knows how it finished (i.e., timed out or normal)
+						defer func() {
+							cancel()
+						}()
+
+						// Handle any runtime errors that may have occurred
+						defer StandardRunTimeErrorCheck(t)
+
 						// In case this function uses random numbers, make sure to set
 						// the seed to specified seed value so the "random" numbers will 
 						// be predictable (deterministic) and will match the expected output
@@ -175,7 +197,6 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *tes
 						// Call the function...
 						// Note: This logic does not support variadic functions!
 						returnVals = function.Call(testFuncs[i].Args)
-						cancel()
 
 					}()
 
@@ -198,54 +219,59 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *tes
 
 					} else {
 
-						if !testFuncs[i].IgnoreReturns {
+						// A runtime error could have caused an error, so check for that before proceeding
+						if !t.Failed() {
 
-							for j := 0; j < len(testFuncs[i].Returns); j++ {
+							if !testFuncs[i].IgnoreReturns {
 
-								// For testing logic
-								//fmt.Println("Expected:", testObjs[i].Returns[j].Interface(), "Actual:", returnVals[j].Interface())
+								for j := 0; j < len(testFuncs[i].Returns); j++ {
 
-								//if testFuncs[i].Returns[j].Interface() != returnVals[j].Interface() {
-								if !reflect.DeepEqual(testFuncs[i].Returns[j].Interface(), returnVals[j].Interface()) {
+									// For testing logic
+									//fmt.Println("Expected:", testObjs[i].Returns[j].Interface(), "Actual:", returnVals[j].Interface())
 
-									// t.Error("Function '" + testFuncs[i].Name +
-									// 	"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
+									//if testFuncs[i].Returns[j].Interface() != returnVals[j].Interface() {
+									if !reflect.DeepEqual(testFuncs[i].Returns[j].Interface(), returnVals[j].Interface()) {
 
-									t.Error("Function '" + testFuncs[i].Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
-								}
-							}
-						}
+										// t.Error("Function '" + testFuncs[i].Name +
+										// 	"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
 
-						if !testFuncs[i].IgnoreStdout {
-
-							if len(testFuncs[i].StdoutStrings) == len(c.OutData) {
-
-								for j := 0; j < len(testFuncs[i].StdoutStrings); j++ {
-	
-									if testFuncs[i].StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
-
-										t.Error("Function '" + testFuncs[i].Name +
-											"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
-
-										// Added break so only one error is returned
-										break
-			
+										t.Error("Function '" + testFuncs[i].Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
 									}
 								}
-
-							} else {
-
-								// For testing
-								// for _, line := range c.OutData {
-								// 	fmt.Println(line)
-								// }
-
-
-								t.Error("Function '" + testFuncs[i].Name +
-									"' displayed unexpected number of output lines to the terminal. Expected " + 
-									strconv.Itoa(len(testFuncs[i].StdoutStrings)) +
-									" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
 							}
+
+							if !testFuncs[i].IgnoreStdout {
+
+								if len(testFuncs[i].StdoutStrings) == len(c.OutData) {
+
+									for j := 0; j < len(testFuncs[i].StdoutStrings); j++ {
+		
+										if testFuncs[i].StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
+
+											t.Error("Function '" + testFuncs[i].Name +
+												"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
+
+											// Added break so only one error is returned
+											break
+				
+										}
+									}
+
+								} else {
+
+									// For testing
+									// for _, line := range c.OutData {
+									// 	fmt.Println(line)
+									// }
+
+
+									t.Error("Function '" + testFuncs[i].Name +
+										"' displayed unexpected number of output lines to the terminal. Expected " + 
+										strconv.Itoa(len(testFuncs[i].StdoutStrings)) +
+										" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
+								}
+							}
+
 						}
 
 					}
@@ -430,6 +456,18 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 
 				go func() {
 
+					//Note: defer statements execute in LIFO order
+						
+					// The cancel function needs to be called once the 
+					// goroutine has completely finished. This is how the
+					// context object knows how it finished (i.e., timed out or normal)
+					defer func() {
+						cancel()
+					}()
+
+					// Handle any runtime errors that may have occurred
+					defer StandardRunTimeErrorCheck(t)
+
 					// In case this method uses random numbers, make sure to set
 					// the seed to specified seed value so the "random" numbers will 
 					// be predictable (deterministic) and will match the expected 
@@ -439,7 +477,6 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 					// Call the method...
 					// Note: This logic does not support variadic functions!
 					returnVals = method.Call(methodTest.Args)
-					cancel()
 
 				}()
 
@@ -461,55 +498,58 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 
 				} else {
 
+					// A runtime error could have caused an error, so check for that before proceeding
+					if !t.Failed() {
 
-					if !methodTest.IgnoreReturns {
+						if !methodTest.IgnoreReturns {
 
-						for j := 0; j < len(methodTest.Returns); j++ {
+							for j := 0; j < len(methodTest.Returns); j++ {
 
-							// For testing logic
-							//fmt.Println("Expected:", methodReturns[i][j].Interface(), "Actual:", returnVals[j].Interface())
+								// For testing logic
+								//fmt.Println("Expected:", methodReturns[i][j].Interface(), "Actual:", returnVals[j].Interface())
 
-							//if methodTest.Returns[j].Interface() != returnVals[j].Interface() {
-							if !reflect.DeepEqual(methodTest.Returns[j].Interface(), returnVals[j].Interface()) {
+								//if methodTest.Returns[j].Interface() != returnVals[j].Interface() {
+								if !reflect.DeepEqual(methodTest.Returns[j].Interface(), returnVals[j].Interface()) {
 
-								t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
-								
-							}
-
-						}
-					}
-
-
-
-
-					if !methodTest.IgnoreStdout {
-
-						if len(methodTest.StdoutStrings) == len(c.OutData) {
-
-							for j := 0; j < len(methodTest.StdoutStrings); j++ {
-		
-								if methodTest.StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
-
-									t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-											"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
-
+									t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
 									
-									break
 								}
+
 							}
-
-						} else {
-
-							// For testing
-							// for _, line := range c.OutData {
-							// 	fmt.Println(line)
-							// }
+						}
 
 
-							t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-								"' displayed unexpected number of output lines to the terminal. Expected " + 
-								strconv.Itoa(len(methodTest.StdoutStrings)) +
-								" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
+
+
+						if !methodTest.IgnoreStdout {
+
+							if len(methodTest.StdoutStrings) == len(c.OutData) {
+
+								for j := 0; j < len(methodTest.StdoutStrings); j++ {
+			
+									if methodTest.StdoutStrings[j] != strings.TrimSpace(c.OutData[j]) {
+
+										t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+												"' displayed unexpected output to the terminal. Unexpected output line: " + strconv.Itoa(j+1) + "\nCommon output problems to double check: misspellings, incorrect character case, extra spaces")
+
+										
+										break
+									}
+								}
+
+							} else {
+
+								// For testing
+								// for _, line := range c.OutData {
+								// 	fmt.Println(line)
+								// }
+
+
+								t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+									"' displayed unexpected number of output lines to the terminal. Expected " + 
+									strconv.Itoa(len(methodTest.StdoutStrings)) +
+									" line(s), found " + strconv.Itoa(len(c.OutData))  + " line(s)")
+							}
 						}
 					}				
 				}
