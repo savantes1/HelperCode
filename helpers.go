@@ -236,11 +236,14 @@ func RunFunctionOutputTests(testFuncs []FuncOutputTest, randomSeed int64, t *tes
 										// 	"' returned unexpected value. Specifically, return value position " + strconv.Itoa(j) + ".")
 
 										t.Error("Function '" + testFuncs[i].Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
+									
+										// Added break so only one error is returned
+										break
 									}
 								}
 							}
 
-							if !testFuncs[i].IgnoreStdout {
+							if !testFuncs[i].IgnoreStdout && !t.Failed() {
 
 								if len(testFuncs[i].StdoutStrings) == len(c.OutData) {
 
@@ -512,7 +515,7 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 								if !reflect.DeepEqual(methodTest.Returns[j].Interface(), returnVals[j].Interface()) {
 
 									t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name + "' returned unexpected value. This means that the value (not type) that was returned after calling the function did not match what was expected, given the arguments passed to the function or data supplied by the user. Be sure to test your function using many different input values to make sure it works in all scenarios.")
-									
+									break
 								}
 
 							}
@@ -521,7 +524,7 @@ func RunMethodOutputTest(testObject interface{}, methodTest MethodOutputTest, ra
 
 
 
-						if !methodTest.IgnoreStdout {
+						if !methodTest.IgnoreStdout && !t.Failed() {
 
 							if len(methodTest.StdoutStrings) == len(c.OutData) {
 
