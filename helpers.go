@@ -49,6 +49,8 @@ func RunFunctionAnatomyTests(testFuncs []FuncAnatomyTest, t *testing.T) {
 							t.Error("Function '" + testFuncs[i].Name + "' has unexpected parameter type at position " +
 								strconv.Itoa(j) + ". Expected type " + testFuncs[i].ArgTypes[j].String() +
 								", found type " + param.String() + ".\nExpected function parameter types:\n" + strings.Join(expectedParamTypes, "\n"))
+							
+							break
 						}
 
 					}
@@ -59,29 +61,31 @@ func RunFunctionAnatomyTests(testFuncs []FuncAnatomyTest, t *testing.T) {
 						" parameter(s), found " + strconv.Itoa(function.Type().NumIn()) + " parameter(s)")
 				}
 
-				if function.Type().NumOut() == len(testFuncs[i].ReturnTypes) {
+				if !t.Failed() {
+					if function.Type().NumOut() == len(testFuncs[i].ReturnTypes) {
 
-					for j := 0; j < len(testFuncs[i].ReturnTypes); j++ {
+						for j := 0; j < len(testFuncs[i].ReturnTypes); j++ {
 
-						returnParam := function.Type().Out(j)
+							returnParam := function.Type().Out(j)
 
-						if returnParam != testFuncs[i].ReturnTypes[j] {
+							if returnParam != testFuncs[i].ReturnTypes[j] {
 
-							// t.Error("Function '" + testFuncs[i].Name +
-							// 	"' returned unexpected data type for return " + strconv.Itoa(j) + ". Expected type " +
-							// 	testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
+								// t.Error("Function '" + testFuncs[i].Name +
+								// 	"' returned unexpected data type for return " + strconv.Itoa(j) + ". Expected type " +
+								// 	testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
 
-							t.Error("Function '" + testFuncs[i].Name +
-								"' returned unexpected data type. Expected type " +
-								testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
+								t.Error("Function '" + testFuncs[i].Name +
+									"' returned unexpected data type. Expected type " +
+									testFuncs[i].ReturnTypes[j].String() + ", received type " + returnParam.String())
+							}
 						}
+
+					} else {
+
+						t.Error("Function '" + testFuncs[i].Name +
+							"' returns unexpected number of values. Expected " + strconv.Itoa(len(testFuncs[i].ReturnTypes)) +
+							" value(s), found " + strconv.Itoa(function.Type().NumOut())  + " value(s)")
 					}
-
-				} else {
-
-					t.Error("Function '" + testFuncs[i].Name +
-						"' returns unexpected number of values. Expected " + strconv.Itoa(len(testFuncs[i].ReturnTypes)) +
-						" value(s), found " + strconv.Itoa(function.Type().NumOut())  + " value(s)")
 				}
 
 			} else {
@@ -336,6 +340,8 @@ func RunMethodAnatomyTest(testObject interface{}, methodTest MethodAnatomyTest, 
 						methodTest.ArgTypes[j].String() + ", found type " + param.String() + ".\nExpected method parameter types:\n" + strings.Join(expectedParamTypes, "\n"))
 					
 					passedTests = false
+
+					break
 				}
 			}
 
@@ -348,30 +354,31 @@ func RunMethodAnatomyTest(testObject interface{}, methodTest MethodAnatomyTest, 
 			passedTests = false
 		}
 
+		if !t.Failed() {
+			if method.Type().NumOut() == len(methodTest.ReturnTypes) {
 
-		if method.Type().NumOut() == len(methodTest.ReturnTypes) {
+				for j := 0; j < len(methodTest.ReturnTypes); j++ {
 
-			for j := 0; j < len(methodTest.ReturnTypes); j++ {
+					param := method.Type().Out(j)
 
-				param := method.Type().Out(j)
+					if param != methodTest.ReturnTypes[j] {
 
-				if param != methodTest.ReturnTypes[j] {
+						t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+							"' returned unexpected data type. Expected type " +
+							methodTest.ReturnTypes[j].String() + ", received type " + param.String())
+						
+						passedTests = false
+					}
 
-					t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-						"' returned unexpected data type. Expected type " +
-						methodTest.ReturnTypes[j].String() + ", received type " + param.String())
-					
-					passedTests = false
 				}
 
+			} else {
+				t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
+					"' returns unexpected number of values. Expected " + strconv.Itoa(len(methodTest.ReturnTypes)) +
+					" value(s), received " + strconv.Itoa(method.Type().NumOut()) + " value(s)")
+
+				passedTests = false
 			}
-
-		} else {
-			t.Error(reflect.TypeOf(testObject).Elem().Name() + " method '" + methodTest.Name +
-				"' returns unexpected number of values. Expected " + strconv.Itoa(len(methodTest.ReturnTypes)) +
-				" value(s), received " + strconv.Itoa(method.Type().NumOut()) + " value(s)")
-
-			passedTests = false
 		}
 
 	} else {
